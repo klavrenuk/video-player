@@ -24,6 +24,7 @@ const playerInstance = ref(null);
 const isShowPlayer = ref(false);
 
 const storageName = 'VideoPlayer';
+const urlYoutubeApi = 'https://www.youtube.com/iframe_api';
 
 const onPlayerReady = () => {
   setVideoTime();
@@ -92,13 +93,31 @@ const handleBeforeUnload = (event) => {
   event.returnValue = '';
 };
 
+const loadScript = () => {
+  const script = document.createElement('script');
+  script.src = urlYoutubeApi;
+  script.type = 'text/javascript';
+  script.async = true;
+
+  script.onload = () => {
+    initYoutubePlayer();
+  };
+
+  script.onerror = () => {
+    console.error('Ошибка при загрузке скрипта');
+    location.reload();
+  };
+
+  document.head.appendChild(script);
+}
+
 onBeforeUnmount(() => {
   saveCurrentTimeVideo();
   window.removeEventListener('beforeunload', handleBeforeUnload);
 })
 
 onMounted(() => {
-  initYoutubePlayer();
+  loadScript();
   window.addEventListener('beforeunload', handleBeforeUnload);
 });
 </script>
