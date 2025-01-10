@@ -1,5 +1,4 @@
 export const listVideos =  [
-    { id: 'dQw4w9WgXcQ', title: 'Видео 1' },
-    { id: 'wtP_Q-VOkAg', title: 'Видео 2' },
-    { id: '3JZ_D3ELwOQ', title: 'Видео 3' },
+    { id: 'ZUL848JM8x4', title: 'На русском', uid: 1 },
+    { id: 'MKZ_QmOW8Yo', title: 'На английском', uid: 1 },
 ]

@@ -46,20 +46,39 @@ const setVideoTime = () => {
 }
 
 const handleChangeVideo = (videoId, index) => {
-  indexCurrentVideo.value = index;
-  changeVideo(videoId);
+  const currentVideo = videos.value[indexCurrentVideo.value];
+  const nextVideo = videos.value[index];
+
+  if((currentVideo.uid && nextVideo.uid) && (currentVideo.uid == nextVideo.uid)) {
+    const currentTime = parseFloat(playerInstance.value.getCurrentTime())
+
+    indexCurrentVideo.value = index;
+    playerInstance.value.loadVideoById(videoId);
+
+    setTimeout(() => {
+      playerInstance.value.seekTo(currentTime, true);
+    }, 400)
+
+  } else {
+    indexCurrentVideo.value = index;
+    changeVideo(videoId);
+  }
 }
 
-const changeVideo = (videoId, state = null) => {
+const changeVideo = (videoId, state = null, time = null) => {
   if (playerInstance.value) {
-    if(state !== 'next') {
+    if(state !== 'finish') {
       saveCurrentTimeVideo();
     }
 
     playerInstance.value.loadVideoById(videoId);
 
     setTimeout(() => {
-      setVideoTime();
+      if(time === 0) {
+        playerInstance.value.seekTo(0, true);
+      } else {
+        setVideoTime();
+      }
     }, 400);
   }
 };
@@ -68,7 +87,7 @@ const saveCurrentTimeVideo = (state = null) => {
   const id = playerInstance.value.getVideoData().video_id;
   const currentTime = playerInstance.value.getCurrentTime();
 
-  let savedData = localStorage.getItem(storageName);
+  const savedData = localStorage.getItem(storageName);
   let storageItem = null
 
   if(savedData !== null) {
@@ -100,21 +119,34 @@ const initYoutubePlayer = () => {
 }
 
 const playNextVideo = () => {
+  let newIndex = 0;
+
   if(indexCurrentVideo.value + 1 > videos.value.length - 1) {
-    indexCurrentVideo.value = 0;
+    newIndex = 0;
   } else {
-    indexCurrentVideo.value += 1;
+    newIndex += 1;
   }
 
-  const nextVideoId = videos.value[indexCurrentVideo.value].id
+  indexCurrentVideo.value = newIndex;
+  const currentVideo = videos.value[indexCurrentVideo.value];
+  const nextVideo = videos.value[newIndex];
+  let time = null;
 
-  changeVideo(nextVideoId, 'next');
+  if((currentVideo.uid && nextVideo.uid) && (currentVideo.uid == nextVideo.uid)) {
+    time = 0;
+  }
+
+  changeVideo(nextVideo.id, 'finish',0);
 }
 
 const handleStateChanged = (event) => {
   if (event.data === YT.PlayerState.ENDED) {
     saveCurrentTimeVideo('end');
     playNextVideo();
+  }
+
+  if (event.data === YT.PlayerState.PLAYING) {
+    saveCurrentTimeVideo();
   }
 }
 
