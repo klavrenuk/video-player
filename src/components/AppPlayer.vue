@@ -4,8 +4,8 @@
 
     <div class="app-player__videos" v-if="isShowPlayer">
       <ul class="app-player__list">
-        <li class="app-player__list__item" v-for="video in videos" :key="video.id">
-          <button class="app-player__video" @click="changeVideo(video.id)">
+        <li class="app-player__list__item" v-for="(video, index) in videos" :key="video.id">
+          <button class="app-player__video" @click="handleChangeVideo(video.id, index)">
             {{ video.title }}
           </button>
         </li>
@@ -22,6 +22,7 @@ const player = ref(null);
 const videos = ref(listVideos || []);
 const playerInstance = ref(null);
 const isShowPlayer = ref(false);
+const indexCurrentVideo = ref(0);
 
 const storageName = 'VideoPlayer';
 const urlYoutubeApi = 'https://www.youtube.com/iframe_api';
@@ -44,17 +45,26 @@ const setVideoTime = () => {
   }
 }
 
-const changeVideo = (videoId) => {
+const handleChangeVideo = (videoId, index) => {
+  indexCurrentVideo.value = index;
+  changeVideo(videoId);
+}
+
+const changeVideo = (videoId, state = null) => {
   if (playerInstance.value) {
-    saveCurrentTimeVideo();
+    if(state !== 'next') {
+      saveCurrentTimeVideo();
+    }
+
     playerInstance.value.loadVideoById(videoId);
+
     setTimeout(() => {
       setVideoTime();
     }, 400);
   }
 };
 
-const saveCurrentTimeVideo = () => {
+const saveCurrentTimeVideo = (state = null) => {
   const id = playerInstance.value.getVideoData().video_id;
   const currentTime = playerInstance.value.getCurrentTime();
 
@@ -67,7 +77,7 @@ const saveCurrentTimeVideo = () => {
 
   storageItem = {
     ...storageItem,
-    [id]: currentTime
+    [id]: state === 'end' ? 0 : currentTime
   }
 
   localStorage.setItem(storageName, JSON.stringify(storageItem));
@@ -81,11 +91,31 @@ const initYoutubePlayer = () => {
       videoId: videos.value[0].id,
       events: {
         onReady: onPlayerReady,
+        onStateChange: handleStateChanged,
       },
     });
 
     isShowPlayer.value = true;
   };
+}
+
+const playNextVideo = () => {
+  if(indexCurrentVideo.value + 1 > videos.value.length - 1) {
+    indexCurrentVideo.value = 0;
+  } else {
+    indexCurrentVideo.value += 1;
+  }
+
+  const nextVideoId = videos.value[indexCurrentVideo.value].id
+
+  changeVideo(nextVideoId, 'next');
+}
+
+const handleStateChanged = (event) => {
+  if (event.data === YT.PlayerState.ENDED) {
+    saveCurrentTimeVideo('end');
+    playNextVideo();
+  }
 }
 
 const handleBeforeUnload = (event) => {
